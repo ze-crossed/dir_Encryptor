@@ -20,6 +20,7 @@ It lets you turn any folder into a single encrypted file using a password that i
 Install requirements (recommended: use a virtual environment, but not required):
 
 ```bash
+git clone https://github.com/ze-crossed/dir_Encryptor.git 
 cd dir_Encryptor
 python3 -m venv .venv
 source .venv/bin/activate
