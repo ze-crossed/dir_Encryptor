@@ -1,0 +1,222 @@
+## These info_notes are totally written by AI, it may contains not so usefull info
+
+This file explains, in simple language, how file_Encryptor.py works.
+Line numbers are approximate and may change if you edit the file,
+but the order of sections should stay the same.
+
+1) Imports (around lines 1–13)
+   - These lines bring in Python tools and the encryption library.
+   - Examples:
+     - argparse: handles command‑line options.
+     - getpass: lets you type a password without showing it on screen.
+     - json: used to store rate limit tracking data.
+     - os: used to read environment variables (for --password-env).
+     - Path: makes it easier to work with file and folder paths.
+     - tarfile: creates and extracts compressed archives.
+     - time: used for timestamp tracking in rate limiting.
+     - sys: used to read from standard input (for --password-stdin).
+     - cryptography.fernet and PBKDF2HMAC: do the actual secure encryption work.
+     - InvalidToken: exception type for wrong passwords (used in rate limiting).
+
+2) Basic settings (around lines 16–19)
+   - SALT_SIZE and KDF_ITERATIONS:
+     - These numbers control how passwords are turned into strong keys.
+     - You usually do NOT need to change these.
+     - A bigger KDF_ITERATIONS number is more secure but a bit slower.
+   - MAX_DECRYPT_ATTEMPTS and RATE_LIMIT_WINDOW:
+     - These control rate limiting to prevent brute-force attacks.
+     - MAX_DECRYPT_ATTEMPTS = 5 (maximum failed attempts allowed per file)
+     - RATE_LIMIT_WINDOW = 3600 (time window in seconds, 1 hour)
+     - You can adjust these if you want stricter or more lenient rate limiting.
+
+3) EncryptionResult class (around lines 17–20)
+   - A small helper "box" that simply remembers:
+     - where the encrypted file is stored, and
+     - which directory was encrypted.
+   - You do not need to change this for normal use.
+
+4) build_key function (around lines 23–38)
+   - Purpose:
+     - Takes your password + a random salt and turns them into a strong key.
+   - How it works (simple version):
+     - It stretches the password using a standard, secure method.
+     - Then it reshapes the result into a form the encryption library understands.
+   - What you might change:
+     - Almost never. Only advanced users might adjust the hashing details.
+
+5) encrypt_directory function (around lines 41–80)
+   - Purpose:
+     - Takes a folder and a password and produces ONE encrypted file.
+   - What it does step by step:
+     1. Checks that the given path is a real directory.
+     2. Decides what the encrypted file will be called:
+        - If you give a name, it uses that (and adds ".enc" if missing).
+        - If you leave it blank, it uses the folder name + ".enc".
+     3. Creates a compressed archive of the entire folder in memory.
+        - It keeps the folder name inside the archive so it comes back correctly.
+     4. Creates a random salt and builds an encryption key from your password.
+     5. Encrypts the compressed data using that key.
+     6. Writes out a new file that contains:
+        - a small fixed "magic" label to say "this is our format",
+        - the salt used for the key,
+        - the encrypted data.
+   - Where the encrypted file is saved:
+     - In the same parent folder as the original directory.
+   - What you might change:
+     - Default file name pattern (lines where ".enc" is added).
+     - The magic label "PARROTENC1" (only if you know what you’re doing).
+
+6) Rate limiting functions (around lines 60–156)
+   - get_rate_limit_file_path():
+     - Creates a unique filename for tracking decryption attempts per encrypted file.
+     - Uses a hash of the file path to create hidden JSON files (`.decrypt_attempts_*.json`).
+   - check_rate_limit():
+     - Checks if an encrypted file has exceeded the maximum allowed failed attempts.
+     - Automatically removes old attempts (older than the rate limit window).
+     - Returns whether decryption is allowed and how long until the limit resets.
+   - record_failed_attempt():
+     - Records a failed decryption attempt with a timestamp.
+     - Only called when the password is wrong (InvalidToken exception).
+     - Stores attempts in a hidden JSON file with secure permissions (chmod 600).
+   - clear_rate_limit():
+     - Removes rate limit tracking when decryption succeeds.
+     - This allows unlimited retries after a successful decryption.
+   - What you might change:
+     - The location where rate limit files are stored.
+     - The file permissions or format of the tracking files.
+
+7) decrypt_file function (around lines 201–258)
+   - Purpose:
+     - Takes an encrypted .enc file and a password and rebuilds the original folder.
+   - What it does step by step:
+     1. Checks that the target is a real file.
+     2. Checks rate limit (calls check_rate_limit()) - stops if too many failed attempts.
+     3. Reads:
+        - the magic label,
+        - the salt,
+        - the encrypted data.
+     4. If the magic label is not what the script expects, it stops with an error.
+     5. Uses the salt + your password to rebuild the same key.
+     6. Decrypts the data back to a compressed archive.
+     7. Unpacks (extracts) the archive into a chosen output directory.
+     8. Clears rate limit tracking on successful decryption.
+   - Error handling:
+     - If password is wrong (InvalidToken), it records a failed attempt and raises an error.
+     - If rate limit is exceeded, it shows a clear message with time until reset.
+   - What you might change:
+     - The default place where it extracts (by default: next to the encrypted file).
+     - The rate limit error messages.
+
+8) prompt_password function (around lines 260–270)
+   - Purpose:
+     - Asks you to type your password twice, without showing it on screen.
+   - Behavior:
+     - If the two passwords do not match, it asks again.
+     - If the password is empty, it asks again.
+   - What you might change:
+     - The text messages shown to the user.
+     - Rules about what is an acceptable password (for example, minimum length).
+
+9) get_password_from_sources function (around lines 273–316)
+   - Purpose:
+     - Gets a password from different sources when running in non-interactive mode
+       (when you use --encrypt or --decrypt command-line options).
+   - How it works:
+     - It checks for a password in this order:
+       1. Environment variable (if you use --password-env)
+       2. A file (if you use --password-file)
+       3. Standard input (if you use --password-stdin)
+       4. Falls back to asking you interactively (hidden prompt)
+   - The "confirm" parameter:
+     - If True, it asks for the password twice (like prompt_password).
+     - If False, it asks only once (used for non-interactive mode).
+   - What you might change:
+     - The order of checking password sources.
+     - Error messages when a password source is missing or empty.
+     - Add more password sources (for example, from a keyring or secure vault).
+
+10) main_menu function (around lines 319–333)
+   - Purpose:
+     - Shows a simple menu so you can choose what to do.
+   - It prints three options:
+     1) Encrypt a directory
+     2) Decrypt an encrypted file
+     3) Exit
+   - It reads your choice and calls:
+     - handle_encrypt() for option 1,
+     - handle_decrypt() for option 2,
+     - prints a goodbye message for option 3.
+   - What you might change:
+     - The menu text (for example, language or wording).
+     - Add more options (like “About” or “Help”).
+
+11) handle_encrypt function (around lines 336–357)
+    - Purpose:
+      - Connects user input with the actual encryption process (used in menu mode).
+    - What it asks you:
+      - The directory path to encrypt.
+      - The password (twice, hidden).
+      - The encrypted file name (just the name, not the full path).
+    - What it does:
+      - Checks that the directory exists.
+      - Calls encrypt_directory() with your choices.
+      - Shows you where the encrypted file was created.
+    - What you might change:
+      - Error messages (friendlier text, another language, etc.).
+      - Default behavior if you leave the encrypted file name blank.
+
+12) handle_decrypt function (around lines 360–385)
+    - Purpose:
+      - Connects user input with the decryption process (used in menu mode).
+    - What it asks you:
+      - The path of the `.enc` file.
+      - The password (hidden).
+      - Where to put the restored folder (or you can leave this blank).
+    - What it does:
+      - Checks that the encrypted file exists.
+      - Calls decrypt_file() to restore the data (which includes rate limiting).
+      - Shows you the output folder path when finished.
+    - Note:
+      - If rate limit is exceeded, decrypt_file() will raise an error with a clear message.
+      - The error will show how long to wait before trying again.
+    - What you might change:
+      - Default destination folder.
+      - Error messages shown when decryption fails.
+
+13) main function (around lines 388–483)
+    - Purpose:
+      - Sets up command‑line options and decides whether to run in menu mode
+        or non-interactive mode.
+    - How it works:
+      - First, it sets up all the command-line arguments:
+        * --encrypt DIR: encrypt a directory (non-interactive)
+        * --decrypt FILE: decrypt an encrypted file (non-interactive)
+        * --output-name NAME: name for encrypted output file
+        * --output-dir DIR: where to extract decrypted content
+        * --password-env VAR: get password from environment variable
+        * --password-file FILE: get password from a file
+        * --password-stdin: get password from standard input
+      - Then it checks what you asked for:
+        1. If you used --encrypt:
+           - It gets the password using get_password_from_sources()
+           - Calls encrypt_directory() with your directory and password
+           - Prints where the encrypted file was created
+           - Exits (does not show menu)
+        2. If you used --decrypt:
+           - It gets the password using get_password_from_sources()
+           - Calls decrypt_file() with your encrypted file and password
+           - Prints where the decrypted content was extracted
+           - Exits (does not show menu)
+        3. If you did not use --encrypt or --decrypt:
+           - It calls main_menu() to show the interactive menu
+    - What you might change:
+      - Add more command-line options (for example, --verbose for more output).
+      - Change the description text shown if you run `python3 file_Encryptor.py --help`.
+      - Change how errors are reported (for example, use exit codes for scripts).
+
+14) The `if __name__ == "__main__":` block (around lines 486–487)
+    - Purpose:
+      - Makes sure the script runs the main() function when you start it
+        with `python3 file_Encryptor.py`.
+    - You normally do not need to change this.
+
