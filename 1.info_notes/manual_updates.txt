@@ -1,0 +1,92 @@
+## These info_notes are totally written by AI, it may contains not so usefull info
+
+This file lists the most useful things you might want to change manually.
+For each item, you can open file_Encryptor.py and edit the lines described.
+
+1) Default encrypted file extension
+   - Where: in function encrypt_directory(), the part that checks/sets ".enc".
+     - Around lines 50–54 in file_Encryptor.py.
+   - What it does:
+     - Makes sure the encrypted file name ends with ".enc".
+   - How to change:
+     - Replace ".enc" with another extension, e.g. ".parrot" or ".secure".
+
+2) Default encrypted file name when you leave it blank
+   - Where: also in encrypt_directory(), where it sets:
+     - output_name = directory.name + ".enc"
+   - What it does:
+     - Uses the folder name and adds ".enc" when you don't type a custom name.
+   - How to change:
+     - Change this line to add a prefix or suffix, for example:
+       - "encrypted_" + directory.name + ".enc"
+
+3) Menu text and language
+   - Where: in main_menu(), handle_encrypt(), and handle_decrypt().
+   - What it does:
+     - Controls all messages shown to the user (titles, prompts, errors).
+   - How to change:
+     - You can translate or rewrite the strings to your preferred language.
+     - Look for lines that use print(...) or input(...).
+
+4) Password rules
+   - Where: in prompt_password().
+   - What it does:
+     - Currently requires non‑empty passwords and that confirmation matches.
+   - How to change:
+     - Add extra checks if you want:
+       - Minimum length (for example, at least 8 characters).
+       - Must contain numbers or special characters.
+
+5) Decryption output location
+   - Where: in handle_decrypt(), around where output_dir is chosen.
+   - What it does:
+     - If you leave the output directory blank, it extracts next to the .enc file.
+   - How to change:
+     - You can set a fixed default folder (for example, your home directory)
+       by changing the line that sets output_dir when the user input is empty.
+
+6) Command‑line behavior (non‑interactive mode)
+   - Where: in main(), the argument parser and the "--no-menu" option.
+   - What it does:
+     - Right now, the script only supports the menu mode for normal use.
+   - How to change:
+     - Advanced users can:
+       - Add more arguments (for example, --encrypt PATH, --decrypt FILE).
+       - Call encrypt_directory() or decrypt_file() directly when those
+         arguments are present.
+
+7) Security tuning: KDF_ITERATIONS
+   - Where: near the top of file_Encryptor.py.
+   - What it does:
+     - Controls how many times the password is processed to make the key.
+   - How to change:
+     - Increasing the number makes brute‑force attacks harder, but also
+       makes encryption/decryption slower.
+     - If you are on a powerful machine and want more protection, you can
+       increase this value.
+
+8) Magic header "PARROTENC1"
+   - Where: inside encrypt_directory() and decrypt_file().
+   - What it does:
+     - Identifies files created by this tool and avoids trying to open
+       random files as encrypted archives.
+   - How to change:
+     - Only if you understand the impact:
+       - The same exact header must be used in both encrypt and decrypt.
+       - Changing it will make old encrypted files unreadable unless you
+         also update decrypt_file() accordingly.
+
+9) Rate limiting settings
+   - Where: near the top of file_Encryptor.py (lines 18-19).
+   - Constants:
+     - MAX_DECRYPT_ATTEMPTS = 5 (maximum failed attempts allowed)
+     - RATE_LIMIT_WINDOW = 3600 (time window in seconds, default: 1 hour)
+   - What it does:
+     - Protects against brute-force attacks by limiting decryption attempts.
+     - Each encrypted file has its own rate limit counter.
+     - Failed attempts are tracked in hidden JSON files (`.decrypt_attempts_*.json`).
+   - How to change:
+     - MAX_DECRYPT_ATTEMPTS: Increase for more lenient limits, decrease for stricter security.
+     - RATE_LIMIT_WINDOW: Change the time window (e.g., 1800 for 30 minutes, 7200 for 2 hours).
+     - Note: Rate limit files are stored in the same directory as encrypted files.
+       They are automatically cleaned up on successful decryption or when old attempts expire.
