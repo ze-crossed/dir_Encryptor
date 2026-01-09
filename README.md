@@ -40,7 +40,7 @@ From the project folder:
 
 ```bash
 cd dir_Encryptor
-python3 file_Encryptor.py
+python3 encryptor.py
 ```
 
 You will see a menu like:
@@ -92,7 +92,7 @@ You can also run the tool **without the menu**, which is useful for scripts or a
 #### 4.1 Non-interactive encrypt
 
 ```bash
-python3 file_Encryptor.py \
+python3 encryptor.py \
   --encrypt /path/to/directory \
   --output-name mybackup.enc \
   --password-env ENC_PASSWORD
@@ -111,7 +111,7 @@ Example with environment variable:
 
 ```bash
 export ENC_PASSWORD="my_secret_password"
-python3 file_Encryptor.py \
+python3 encryptor.py \
   --encrypt "/home/parrotuser/Documents/secret_stuff" \
   --output-name secret_backup.enc \
   --password-env ENC_PASSWORD
@@ -120,7 +120,7 @@ python3 file_Encryptor.py \
 #### 4.2 Non-interactive decrypt
 
 ```bash
-python3 file_Encryptor.py \
+python3 encryptor.py \
   --decrypt /path/to/file.enc \
   --output-dir /path/to/restore/here \
   --password-env ENC_PASSWORD
@@ -134,7 +134,7 @@ python3 file_Encryptor.py \
 Example using stdin:
 
 ```bash
-printf 'my_secret_password\n' | python3 file_Encryptor.py \
+printf 'my_secret_password\n' | python3 encryptor.py \
   --decrypt "/home/parrotuser/Documents/secret_backup.enc" \
   --output-dir "/home/parrotuser/restore_here" \
   --password-stdin
