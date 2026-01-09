@@ -3,7 +3,7 @@
 A simple **directory encryptor** written in Python for Parrot OS (and other Linux systems).
 It lets you turn any folder into a single encrypted file using a password that is **not shown on screen** when you type it.
 
-### 1. Features
+### 1. Features 
 
 - **Encrypt a directory** into one `.enc` file stored next to the original folder.
 - **Decrypt an encrypted file** back into a normal directory.
