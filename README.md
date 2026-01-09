@@ -164,3 +164,4 @@ pip install -r requirements.txt
 python3 file_Encryptor.py
 ```
 
+### v2 of this program will use the custom encryption 
