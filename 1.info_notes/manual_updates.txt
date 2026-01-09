@@ -2,7 +2,7 @@
 
 This file lists the most useful things you might want to change manually.
 For each item, you can open file_Encryptor.py and edit the lines described.
-
+ 
 1) Default encrypted file extension
    - Where: in function encrypt_directory(), the part that checks/sets ".enc".
      - Around lines 50–54 in file_Encryptor.py.
